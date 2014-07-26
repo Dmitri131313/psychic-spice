@@ -16,6 +16,10 @@ NOT_MAGE            = "NOT_MAGE"
 MIN_SEX_AGE         = 13
 MAX_SEX_AGE         = 60
 
+def LoadedToss( probability ):
+    toss = random.randint( 0, 99 )
+    return toss < probability
+
 class AHuman( object ):
     """
     A class that represents our "magic" human beings. Each human have only two kinds of genes. 
@@ -30,14 +34,6 @@ class AHuman( object ):
         Other parametres will be randomly defined depending on these two tuples.
         By default our human is half-mage woman.
         """
-        assert len( sex_genes ) == 2 # Suspicious literals
-        assert len( mag_genes ) == 2
-        assert sex_genes != ( Y_CHROMOSOME, Y_CHROMOSOME )
-        assert MAG_CHROMOSOME not in sex_genes 
-        assert NMAG_CHROMOSOME not in sex_genes
-        assert X_CHROMOSOME not in mag_genes
-        assert Y_CHROMOSOME not in mag_genes
-
         object.__init__( self )
 
         self.__sex_genes    = sex_genes
@@ -49,12 +45,6 @@ class AHuman( object ):
         self.__DefineGender()
         self.__DefineMageStatus()
         self.__DefineMaxAge()
-
-        if self.__gender == FEMALE:
-            self.__DefineMaxChildren()
-            self.__sex_ages = [ random.randint( MIN_SEX_AGE, MAX_SEX_AGE ) for i in xrange( self.__max_children ) ]
-            self.__sex_ages.sort()
-            self.__sex_ages.reverse()
 
     def __DefineGender( self ):
         """
@@ -92,21 +82,6 @@ class AHuman( object ):
         age = int( round( age ) )
         self.__max_age = age
 
-    def __DefineMaxChildren( self ):
-        """
-        Defines how much children human will have using gaussian distribution.
-        """
-        if self.__mage_status == NOT_MAGE:
-            mean, deviation = 3, 1
-        else:
-            mean, deviation = 6, 2
-        children = random.gauss( mean, deviation )
-        children = int( round ( children ) )
-        if children < 0: 
-            children = 0
-
-        self.__max_children = children
-
     def GetSexGene( self ):
         """
         Returns sex_gene as a tuple.
@@ -118,13 +93,6 @@ class AHuman( object ):
         Returns mag_genes as a tuple.
         """
         return random.choice( self.__mag_genes )
-
-    def AddChild( self ):
-        """
-        Inctements a human's number of children and checks if 
-        this number have reached its maximum value.
-        """
-        self.__children += 1
 
     def GetGender( self ):
         """
@@ -142,15 +110,9 @@ class AHuman( object ):
         """
         If human is female it gives birth t
         """
-        assert self.__gender == FEMALE
-        assert father.GetGender() == MALE
-
         new_sex_gene = ( self.GetSexGene(), father.GetSexGene() )
         new_mag_gene = ( self.GetMageGene(), father.GetMageGene() )
         child = AHuman( new_sex_gene, new_mag_gene )
-        self.AddChild()
-        father.AddChild()
-
         return child
 
     def __Die( self ):
@@ -164,17 +126,9 @@ class AHuman( object ):
         """
         Increases human's age year by year until it dies.
         """
-        assert self.__alive
         self.__age += 1
         if self.__age >= self.__max_age:
             self.__Die()
-
-    def GetSexAges( self ):
-        """
-        Returns a list of years when human female will give birth.
-        """
-        assert self.__gender == FEMALE
-        return self.__sex_ages
 
     def GetActualAge( self ):
         """
@@ -198,6 +152,15 @@ class AHuman( object ):
         """
         Tells us is human male ready for making babies or not.
         """
-        assert self.__gender == MALE
+        # assert self.__gender == MALE
         return self.__age >= 16
+
+    def IsReadyToGiveBirth( self ):
+        if 15 <= self.__age <= 60:
+            if self.__mage_status == NOT_MAGE:
+                return LoadedToss( 10 )
+            else:
+                return LoadedToss( 20 )
+        else:
+            return False
 
